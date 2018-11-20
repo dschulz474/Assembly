@@ -5,6 +5,8 @@
 .equ SWI_RDInt,0x6c@read int and print int
 .equ SWI_PrInt,0x6b
 .equ SWI_RDStr,0x6a
+.equ SWI_MeAlloc,0x12
+.equ SWI_DAlloc,0x13
 .equ Stdout, 1
 .equ SWI_Exit,0x11
 .global _start
@@ -12,9 +14,10 @@
 
 _start:
 main:
-ldr r3,=operationNumber
-ldr r4,=number
+ldr r3,=command
+ldr r4,=key
 ldr r5,=input
+
 bal OpenCommandFile
 
 OpenCommandFile:
@@ -25,7 +28,7 @@ swi	SWI_Open	@open file
 bcs	InFileError	@check carry bit C if= 1 then error
 ldr	r1,=InFileHandle
 str r0,[r1]
-b ReadCommandFile
+
 
 
 ReadCommandFile:
@@ -33,16 +36,13 @@ ReadCommandFile:
 ldr r0,=InFileHandle
 ldr r0,[r0]
 swi	SWI_RDInt
-mov r1,r0
 str r0,[r3]
-b ReadCommandFile2
 
 
 ReadCommandFile2:
 ldr r0,=InFileHandle
 ldr r0,[r0]
 swi SWI_RDInt
-mov r1,r0
 str r0,[r4]
 b EoFReached
 
@@ -71,6 +71,26 @@ swi	SWI_RDStr
 mov r1,r0
 str r0,[r5]
 
+createArrayIn:
+ldr r0,=blockSize
+ldr r0,[r0]
+swi SWI_MeAlloc
+ldr r6,=arrayIn
+str r0,[r6]
+
+createArrayOut:
+ldr r0,=blockSize
+ldr r0,[r0]
+swi SWI_MeAlloc
+ldr r7,=arrayOut
+str r0,[r7]
+
+writeArray:
+mov r0,r5
+mov r1,r6
+ldr r2,=blockSize
+eor r0,r0,r0
+
 
 InFileError:
 mov r0,#Stdout
@@ -82,8 +102,9 @@ bal Exit
 Exit:@Exit 
 	swi		SWI_Exit
 .data
-.align	4
-array:	.skip 400
+arrayIn:	.word 0
+arrayOut:	.word 0
+blockSize:  .word 500
 InFileHandle:	.skip 4
 CommandFile:	.asciz "inputCommand.txt"
 InputFile:		.asciz "messageInput.txt"
@@ -91,6 +112,6 @@ FileOpenError:	.asciz "Failed to open file \n"
 EndOfFileMsg:	.asciz "End of file reached \n"
 ColonSpace:		.asciz ": "
 NewLine:		.asciz "\n"
-operationNumber:	.word 0
-number:		.word 0
+command:	.word 0
+key:		.word 0
 input:	.word 0
