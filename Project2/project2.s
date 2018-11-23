@@ -70,6 +70,7 @@ mov r2,#80
 swi	SWI_RDStr
 mov r1,r0
 str r0,[r5]
+b createArrayIn
 
 createArrayIn:
 ldr r0,=blockSize
@@ -77,6 +78,7 @@ ldr r0,[r0]
 swi SWI_MeAlloc
 ldr r6,=arrayIn
 str r0,[r6]
+b createArrayOut
 
 createArrayOut:
 ldr r0,=blockSize
@@ -84,12 +86,63 @@ ldr r0,[r0]
 swi SWI_MeAlloc
 ldr r7,=arrayOut
 str r0,[r7]
+b writeArrayIn
 
-writeArray:
+writeArrayIn:
 mov r0,r5
 mov r1,r6
 ldr r2,=blockSize
 eor r0,r0,r0
+b loopArg
+
+loopArg:
+mov r1,#1
+eor r2,r2,r2
+mov r3,r2 @index
+b UserInputHandle
+
+UserInputHandle:
+mov r0,r3
+cmp r3,#0
+beq Encrypt
+bgt Decrypt
+
+Encrypt:
+ldrb r0,[r6,r3]
+cmp r0,r2
+beq Print
+eor r0,r0,r8
+strb r0,[r7,r3]
+add r1,r1,#1
+b Encrypt
+
+Decrypt:
+ldrb r0,[r6,r3]
+cmp r0,r2
+beq Print
+eor r0,r0,r8
+strb r0,[r7,r3]
+add r3,r3,r1
+b Decrypt
+
+Print:
+mov r0,r5
+ldr r1,=arrayOut
+swi SWI_PrStr
+ldr r0,=OutFileHandle
+ldr r0,[r0]
+ldr r1,=arrayOut
+swi 0x69
+b Exit
+
+
+
+
+
+
+
+
+
 
 
 InFileError:
@@ -106,6 +159,7 @@ arrayIn:	.word 0
 arrayOut:	.word 0
 blockSize:  .word 500
 InFileHandle:	.skip 4
+OutFileHandle:	
 CommandFile:	.asciz "inputCommand.txt"
 InputFile:		.asciz "messageInput.txt"
 FileOpenError:	.asciz "Failed to open file \n"
