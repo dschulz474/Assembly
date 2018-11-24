@@ -92,7 +92,7 @@ writeArrayIn:
 mov r0,r5
 mov r1,r6
 ldr r2,=blockSize
-eor r0,r0,r0
+str r5,[r6]
 b loopArg
 
 loopArg:
